@@ -24,12 +24,12 @@ def connection_routine():
     options = Options()
     options.headless = True
     options.add_argument("--start-maximized")
-    options.add_argument('log-level=2')
+    options.add_argument('log-level=1')
 
     caps = DesiredCapabilities.CHROME
     caps['goog:loggingPrefs'] = {'performance': 'ALL'}
 
-    driver = webdriver.Chrome(executable_path="chromedriver/chromedriver.exe",
+    driver = webdriver.Chrome(executable_path="dataset_generator/chromedriver/chromedriver.exe",
                               options=options,
                               desired_capabilities=caps
                               )
@@ -37,7 +37,7 @@ def connection_routine():
     driver.get(URL)
     time.sleep(5)
     # Add cookies for login
-    cookies = pickle.load(open("cookies.pkl", "rb"))
+    cookies = pickle.load(open("dataset_generator/cookies.pkl", "rb"))
     for cookie in cookies:
         driver.add_cookie(cookie)
     # need to open it twice to be logged in
@@ -101,7 +101,7 @@ def take_nice_screenshot(driver, name):
 
     time.sleep(20)"""
     screenshot = element.screenshot_as_png
-    with open(f"D:/projets_perso/GeoG/datasets/v2/{name}.png", 'wb') as f:
+    with open(f"D:/projets_perso/GeoG/datasets/v3/{name}.png", 'wb') as f:
         f.write(screenshot)
     return
 
@@ -131,7 +131,7 @@ def task():
     driver = game_start_routine(driver, change_settings=True)
     # driver.set_window_size(1920, 1080)
 
-    for game in range(1000):
+    for game in range(10000):
         driver.set_window_size(1920, 1080)
         time.sleep(15)
         for r in range(1, 6):
@@ -155,4 +155,4 @@ def task():
                 click_button(driver, "/html/body/div/div/div/main/div[2]/div/div[2]/div/div[1]/div/div[4]/button/div")
         game_start_routine(driver, change_settings=False)
 
-    return "1000 games done"
+    return "10000 games done"
