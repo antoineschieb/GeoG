@@ -27,8 +27,8 @@ def train(h):
     print(f"device: {device}")
 
     # train dataset
-    train_ds = PartitionedDataset("D:/projets_perso/GeoG/datasets/v2_eval", 6, shuffle_buffer=True)
-    test_ds = PartitionedDataset("D:/projets_perso/GeoG/datasets/v2_eval", 6, shuffle_buffer=False, ohe=train_ds.ohe)
+    train_ds = PartitionedDataset("D:/projets_perso/GeoG/datasets/v3", 10, shuffle_buffer=True)
+    test_ds = PartitionedDataset("D:/projets_perso/GeoG/datasets/v3_eval", 1, shuffle_buffer=False, ohe=train_ds.ohe)
 
     # loaders
     trainloader = torch.utils.data.DataLoader(train_ds, batch_size=h['batch_size'], shuffle=False, num_workers=0,
@@ -56,10 +56,10 @@ def train(h):
 
         model.train()
         epoch_loss = 0.0
+        last100BL = 0.0
         for i, [patch, target] in tqdm(enumerate(trainloader), total=len(train_ds)//h['batch_size']):
 
-            patch.to(device)
-            target.to(device)
+
             target = torch.squeeze(target)
             patch = torch.Tensor(patch)
             patch = torch.permute(patch, (0, 3, 1, 2))
@@ -73,7 +73,11 @@ def train(h):
             optimizer.step()
 
             epoch_loss += batch_loss.item()
-            print(f"batch loss {batch_loss.item()}")
+            last100BL += batch_loss.item()
+            if i % 100 == 0:
+                print(f"last 100 batch loss {last100BL/100}")
+                last100BL = 0.0
+                torch.save(model.state_dict(), f"./saved_models/latest.pth")
 
         torch.save(model.state_dict(), f"./saved_models/model_epoch_{ep}_loss{epoch_loss}.pth")
         print(f"avg Train Loss for this epoch: {epoch_loss/len(train_ds)}")

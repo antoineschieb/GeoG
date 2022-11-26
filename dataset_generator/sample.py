@@ -1,14 +1,17 @@
+from random import randrange
+import sys
 import os
 import pickle
 import json
 import time
-from seleniumwire import webdriver  # Import from seleniumwire
+from seleniumwire import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from seleniumwire.utils import decode
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 
 def process(list_of_Ls):
     unique_locs = []
@@ -46,7 +49,7 @@ def connection_routine():
 
 def click_button(driver, xpath):
     seconds = 0
-    while seconds < 45:
+    while seconds < 120:
         try:
             element = driver.find_element(By.XPATH, xpath)
             element.click()
@@ -54,7 +57,8 @@ def click_button(driver, xpath):
         except NoSuchElementException:
             time.sleep(1)
             seconds += 1
-
+    r = randrange(0, 10)
+    driver.get_screenshot_as_file(f"crashhh{r}.png")
     raise TimeoutError(f"Timeout for button {xpath}")
 
 
@@ -131,18 +135,19 @@ def task():
     driver = game_start_routine(driver, change_settings=True)
     # driver.set_window_size(1920, 1080)
 
-    for game in range(10000):
+    for game in range(10):
         driver.set_window_size(1920, 1080)
-        time.sleep(15)
+        #driver.maximize_window()
+        time.sleep(10)
         for r in range(1, 6):
-            time.sleep(6)
+            time.sleep(7)
             while True:
                 list_of_Ls = network_logs(driver)
                 unique_locs = process(list_of_Ls)
                 if len(unique_locs) != 0:
                     if len(unique_locs) == 5*game + r:
                         break
-            time.sleep(1)
+            time.sleep(2)
             ssname = f"{unique_locs[-1][0]}_{unique_locs[-1][1]}_{unique_locs[-1][2]}"
             take_nice_screenshot(driver, ssname)
             print(f"{os.getpid()}:{ssname}")
@@ -153,6 +158,35 @@ def task():
             if r < 5:
                 # next round
                 click_button(driver, "/html/body/div/div/div/main/div[2]/div/div[2]/div/div[1]/div/div[4]/button/div")
+        time.sleep(30) # avoid "slow down there cowboy"
         game_start_routine(driver, change_settings=False)
 
-    return "10000 games done"
+    return "10 games done"
+
+
+if __name__=='__main__':
+    options = Options()
+    options.headless = False
+    options.add_argument("--start-maximized")
+    options.add_argument('log-level=1')
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    options.add_experimental_option('useAutomationExtension', False)
+    options.add_argument('--disable-blink-features=AutomationControlled')
+    print(1)
+    caps = DesiredCapabilities.CHROME
+    caps['goog:loggingPrefs'] = {'performance': 'ALL'}
+    s = Service(r"M:\projets_perso\GeoG\dataset_generator\chromedriver\chromedriver.exe")
+
+
+    driver = webdriver.Chrome(executable_path=r"M:\projets_perso\GeoG\dataset_generator\chromedriver\chromedriver.exe",
+                              options=options,
+                              desired_capabilities=caps,
+                              service=s
+                              )
+    print(3)
+    URL = "https://geoguessr.com/maps/59a1514f17631e74145b6f47"
+    print(4)
+    driver.get(URL)
+    print(5)
+

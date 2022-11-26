@@ -20,12 +20,16 @@ def chunks(lst, n):
 
 class PartitionedDataset(Dataset):
     def __init__(self, folder_path, nb_parts, shuffle_buffer=False, ohe=None):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         self.shuffle_buffer = shuffle_buffer
         self.nb_parts = nb_parts
         self.folder_path = folder_path
 
         self.file_list = [f.split(".png")[0] for f in listdir(folder_path)
                           if isfile(join(folder_path, f)) and f.split(".png")[0].split("_")[-1] != 'None']
+        if shuffle_buffer:
+            shuffle(self.file_list)
 
         to_drop = len(self.file_list) % nb_parts
         if to_drop != 0:
@@ -33,8 +37,8 @@ class PartitionedDataset(Dataset):
 
         assert len(self.file_list) % nb_parts == 0
 
-
-        self.chunks = list(chunks(self.file_list, nb_parts))
+        self.nb_chunks = len(self.file_list) // self.nb_parts
+        self.chunks = list(chunks(self.file_list, self.nb_chunks))
         self.current_chunk_loaded = -1
 
         self.buffer = None
@@ -59,10 +63,10 @@ class PartitionedDataset(Dataset):
         requested_chunk = img_idx // len(self.chunks[0])
         requested_img_idx_in_chunk = img_idx % len(self.chunks[0])
         if requested_chunk != self.current_chunk_loaded:
-            # print(f"loading new chunk... {requested_chunk}")
+            print(f"loading new chunk... {requested_chunk}")
             self.buffer = []
 
-            for f_name in self.chunks[requested_chunk]:
+            for f_name in tqdm(self.chunks[requested_chunk]):
                 label = f_name.split("_")[-1]
                 m = self.ohe.transform(np.array([label]).reshape(-1, 1))
 

@@ -13,8 +13,8 @@ def start_new_process(processes):
 if __name__ == '__main__':
     # create the processes
     processes = []
-    for i in range(5):
-        time.sleep(5)
+    for i in range(3):
+        time.sleep(15)
         start_new_process(processes)
 
     total_killed = 0
@@ -24,7 +24,7 @@ if __name__ == '__main__':
         for p in processes:
             # report the process is alive
             if not p.is_alive():
-                print(f"[distribute.py] : one process {p} died, spawning new one.")
+                print(f"[distribute.py] : process {p} died (or finished), spawning new one.")
                 processes.remove(p)
                 total_killed += 1
                 start_new_process(processes)
