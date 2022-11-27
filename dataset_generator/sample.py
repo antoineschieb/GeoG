@@ -13,6 +13,7 @@ from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 
+
 def process(list_of_Ls):
     unique_locs = []
     for L in list_of_Ls:

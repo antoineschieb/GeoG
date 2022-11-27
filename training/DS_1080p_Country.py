@@ -20,6 +20,7 @@ def chunks(lst, n):
 
 class PartitionedDataset(Dataset):
     def __init__(self, folder_path, nb_parts, shuffle_buffer=False, ohe=None):
+        print("init")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.shuffle_buffer = shuffle_buffer
@@ -66,7 +67,7 @@ class PartitionedDataset(Dataset):
             print(f"loading new chunk... {requested_chunk}")
             self.buffer = []
 
-            for f_name in tqdm(self.chunks[requested_chunk]):
+            for f_name in self.chunks[requested_chunk]:
                 label = f_name.split("_")[-1]
                 m = self.ohe.transform(np.array([label]).reshape(-1, 1))
 

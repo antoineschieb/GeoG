@@ -8,6 +8,12 @@ from DS_1080p_Country import DS_1080p_Country, PartitionedDataset
 from torch.utils.data import Dataset
 import time
 
+
+global ROOTDIR, DATADIR
+ROOTDIR = "/work/imvia/an3112sc/perso/GeoG/"
+DATADIR = "/work/imvia/an3112sc/perso/GeoG/datasets/"
+
+
 def countries_from_output(ds_ohe, out):
     m = torch.nn.Softmax(dim=1)
     real_out = m(out)
@@ -27,8 +33,8 @@ def train(h):
     print(f"device: {device}")
 
     # train dataset
-    train_ds = PartitionedDataset("D:/projets_perso/GeoG/datasets/v3", 10, shuffle_buffer=True)
-    test_ds = PartitionedDataset("D:/projets_perso/GeoG/datasets/v3_eval", 1, shuffle_buffer=False, ohe=train_ds.ohe)
+    train_ds = PartitionedDataset(f"{DATADIR}v3", 8, shuffle_buffer=True)
+    test_ds = PartitionedDataset(f"{DATADIR}ADW_1080p_subset", 1, shuffle_buffer=False, ohe=train_ds.ohe)
 
     # loaders
     trainloader = torch.utils.data.DataLoader(train_ds, batch_size=h['batch_size'], shuffle=False, num_workers=0,
@@ -37,7 +43,7 @@ def train(h):
                                              drop_last=True, generator=torch.Generator(device='cuda'))
 
     # model
-    torch.hub.set_dir("./cache-dir/")
+    torch.hub.set_dir(f"{ROOTDIR}/cache-dir/")
     model = models.resnet18(weights=ResNet18_Weights.DEFAULT, progress=False)
     """for param in model.parameters():
         param.requires_grad = False"""
@@ -50,16 +56,14 @@ def train(h):
 
     loss = torch.nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=h['lr'])
-
+    print("pre-epoch")
     for ep in range(0, h['epochs']):
         print(f'Epoch {ep+1}')
 
         model.train()
         epoch_loss = 0.0
         last100BL = 0.0
-        for i, [patch, target] in tqdm(enumerate(trainloader), total=len(train_ds)//h['batch_size']):
-
-
+        for i, [patch, target] in enumerate(trainloader): # , total=len(train_ds)//h['batch_size']):
             target = torch.squeeze(target)
             patch = torch.Tensor(patch)
             patch = torch.permute(patch, (0, 3, 1, 2))
@@ -74,13 +78,13 @@ def train(h):
 
             epoch_loss += batch_loss.item()
             last100BL += batch_loss.item()
-            if i % 100 == 0:
-                print(f"last 100 batch loss {last100BL/100}")
+            if i % 1000 == 0:
+                print(f"last 1000 batch loss {last100BL/1000}")
+                torch.save(model.state_dict(), f"{ROOTDIR}training/saved_models/latest.pth")
                 last100BL = 0.0
-                torch.save(model.state_dict(), f"./saved_models/latest.pth")
 
-        torch.save(model.state_dict(), f"./saved_models/model_epoch_{ep}_loss{epoch_loss}.pth")
-        print(f"avg Train Loss for this epoch: {epoch_loss/len(train_ds)}")
+        torch.save(model.state_dict(), f"{ROOTDIR}training/saved_models/model_epoch_{ep}_loss{epoch_loss/i}.pth")
+        print(f"avg Train Loss for this epoch: {epoch_loss/i}")
         print("="*100)
         print()
         model.eval()
@@ -99,7 +103,7 @@ def train(h):
 
                 batch_loss = loss(out, target)
                 test_loss += batch_loss.item()
-        print(f"avg Test Loss for this epoch: {test_loss/len(test_ds)}")
+        print(f"avg Test Loss for this epoch: {test_loss/i}")
         print("=" * 100)
         print()
 
@@ -110,7 +114,7 @@ def train(h):
 if __name__ == "__main__":
     hyperparams = {
         'batch_size': 8,
-        'epochs': 100,
+        'epochs': 300,
         'lr': 0.0001
     }
 
