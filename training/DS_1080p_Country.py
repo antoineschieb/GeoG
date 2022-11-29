@@ -9,7 +9,7 @@ import numpy as np
 from torch.utils.data import Dataset
 import pickle
 from random import shuffle
-
+from paths import ROOTDIR, DATADIR
 
 
 def chunks(lst, n):
