@@ -2,6 +2,7 @@
 /cache-dir/
 *.png
 /.idea
+/training/eval.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
