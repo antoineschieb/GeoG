@@ -13,7 +13,7 @@ def start_new_process(processes):
 if __name__ == '__main__':
     # create the processes
     processes = []
-    for i in range(3):
+    for i in range(4):
         time.sleep(15)
         start_new_process(processes)
 

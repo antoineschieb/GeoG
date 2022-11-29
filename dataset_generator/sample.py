@@ -52,6 +52,9 @@ def click_button(driver, xpath):
     seconds = 0
     while seconds < 120:
         try:
+            if seconds == 60:
+                driver.refresh()
+                time.sleep(10)
             element = driver.find_element(By.XPATH, xpath)
             element.click()
             return
@@ -106,7 +109,7 @@ def take_nice_screenshot(driver, name):
 
     time.sleep(20)"""
     screenshot = element.screenshot_as_png
-    with open(f"D:/projets_perso/GeoG/datasets/v3/{name}.png", 'wb') as f:
+    with open(f"D:/projets_perso/GeoG/datasets/v4/{name}.png", 'wb') as f:
         f.write(screenshot)
     return
 
@@ -177,13 +180,13 @@ if __name__=='__main__':
     print(1)
     caps = DesiredCapabilities.CHROME
     caps['goog:loggingPrefs'] = {'performance': 'ALL'}
-    s = Service(r"M:\projets_perso\GeoG\dataset_generator\chromedriver\chromedriver.exe")
+    #s = Service(r"M:\projets_perso\GeoG\dataset_generator\chromedriver\chromedriver.exe")
 
 
-    driver = webdriver.Chrome(executable_path=r"M:\projets_perso\GeoG\dataset_generator\chromedriver\chromedriver.exe",
+    driver = webdriver.Chrome(executable_path="M:/projets_perso/GeoG/dataset_generator/chromedriver/chromedriver.exe",
                               options=options,
                               desired_capabilities=caps,
-                              service=s
+                              #service=s
                               )
     print(3)
     URL = "https://geoguessr.com/maps/59a1514f17631e74145b6f47"
