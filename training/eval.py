@@ -39,8 +39,8 @@ if __name__ == "__main__":
     print(f"device: {device}")
 
     # base dataset
-    ds = PartitionedDataset(f"{DATADIR}v3/0", 10, (456, 456, 3), offset=(65, 85))
-    small_ds = PartitionedDataset(f"{DATADIR}v3/0", 10, (456, 456, 3), offset=(65, 85), ohe=ds.ohe)
+    ds = PartitionedDataset(f"{DATADIR}v3", 10, (456, 456, 3), offset=(75, 55))
+    small_ds = PartitionedDataset(f"{DATADIR}v4", 10, (456, 456, 3), offset=(75, 55))
     # model
     torch.hub.set_dir("./cache-dir/")
     model = models.efficientnet_b5(progress=False)
@@ -48,12 +48,12 @@ if __name__ == "__main__":
         torch.nn.Dropout(p=0.1, inplace=True),
         torch.nn.Linear(2048, ds.nb_countries()),
     )
-    model.load_state_dict(torch.load(f"{ROOTDIR}training/saved_models/latest.pth"))
+    model.load_state_dict(torch.load(f"{ROOTDIR}training/saved_models/efnetb5/model_epoch_1_loss2.1834549507420107.pth"))
     model.to(device)
     model.eval()
 
     with torch.no_grad():
-        for imgidx in range(1, 24):
+        for imgidx in range(41, 70):
             M = ds.patches_per_img*imgidx
             preds = []
             print(f'img index: {imgidx}')
