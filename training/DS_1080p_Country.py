@@ -7,7 +7,7 @@ from sklearn.preprocessing import OneHotEncoder
 from patchify import patchify
 import numpy as np
 from torch.utils.data import Dataset
-import time
+import pickle
 from random import shuffle
 
 
@@ -29,10 +29,25 @@ class PartitionedDataset(Dataset):
         self.nb_parts = nb_parts
         self.folder_path = folder_path
 
+        with open(f'{ROOTDIR}training/country_tags.pkl', 'rb') as f:
+            country_tags = pickle.load(f)
+        assert isinstance(country_tags, list)
+        self.ohe = OneHotEncoder(sparse=False)
+        self.ohe.fit(np.array(country_tags).reshape(-1, 1))
+
         self.file_list = [f.split(".png")[0] for f in listdir(folder_path)
-                          if isfile(join(folder_path, f)) and f.split(".png")[0].split("_")[-1] != 'None']
-        if shuffle_buffer:
-            shuffle(self.file_list)
+                          if isfile(join(folder_path, f))
+                          and f.split(".png")[0].split("_")[-1] in country_tags]
+
+
+        # when dataset is used for eval
+        """if ohe is not None:
+            for f in self.file_list:
+                if f.split("_")[-1] not in list(ohe.categories_[0]):
+                    self.file_list.remove(f)
+        """
+        # always shuffle file list globally at least once
+        shuffle(self.file_list)
 
         to_drop = len(self.file_list) % nb_parts
         if to_drop != 0:
@@ -44,16 +59,17 @@ class PartitionedDataset(Dataset):
         print(f"nombre d'imgs par chunk {self.nb_chunks}")
         self.chunks = list(chunks(self.file_list, self.nb_chunks))
         self.current_chunk_loaded = -1
-
         self.buffer = None
 
-        self.country_labels_list = [x.split("_")[-1] for x in self.file_list]
+
         # one-hot-encode country labels
+        """
+        self.country_labels_list = [x.split("_")[-1] for x in self.file_list]
         if ohe is not None:
             self.ohe = ohe
         else:
             self.ohe = OneHotEncoder(sparse=False)
-            self.ohe.fit(np.array(self.country_labels_list).reshape(-1, 1))
+            self.ohe.fit(np.array(self.country_labels_list).reshape(-1, 1))"""
 
     def __len__(self):
         return len(self.file_list)*self.patches_per_img
@@ -135,3 +151,10 @@ class DS_1080p_Country(Dataset):
         m = self.ohe.transform(np.array([country_label_str]).reshape(-1, 1))
 
         return [patches[patch_idx, :, :, :], torch.Tensor(m)]"""
+
+if __name__ == "__main__":
+    from paths import ROOTDIR, DATADIR
+    # train dataset
+    train_ds = PartitionedDataset(
+        f"{DATADIR}v3", 50, (456, 456, 3), offset=(65, 85), shuffle_buffer=True)
+    print(len(train_ds))
