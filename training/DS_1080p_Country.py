@@ -10,6 +10,7 @@ from torch.utils.data import Dataset
 import pickle
 from random import shuffle
 from paths import ROOTDIR, DATADIR
+from utils import flog
 
 
 def chunks(lst, n):
@@ -19,7 +20,7 @@ def chunks(lst, n):
 
 
 class PartitionedDataset(Dataset):
-    def __init__(self, folder_path: str, nb_parts: int, size: tuple, offset=(0, 0), shuffle_buffer=False, ohe=None):
+    def __init__(self, folder_path: str, nb_parts: int, size: tuple, offset=(0, 0), shuffle_buffer=False):
         self.size = size
         self.offset = offset
         self.patches_per_img = (1920//size[0]) * (1080//size[1])
@@ -39,13 +40,13 @@ class PartitionedDataset(Dataset):
                           if isfile(join(folder_path, f))
                           and f.split(".png")[0].split("_")[-1] in country_tags]
 
+        self.occurences = {key: 0 for key in country_tags}
+        for f in self.file_list:
+            tag = f.split(".png")[0].split("_")[-1]
+            self.occurences[tag] += 1
 
-        # when dataset is used for eval
-        """if ohe is not None:
-            for f in self.file_list:
-                if f.split("_")[-1] not in list(ohe.categories_[0]):
-                    self.file_list.remove(f)
-        """
+        # print(self.occurences)
+
         # always shuffle file list globally at least once
         shuffle(self.file_list)
 
@@ -62,15 +63,6 @@ class PartitionedDataset(Dataset):
         self.buffer = None
 
 
-        # one-hot-encode country labels
-        """
-        self.country_labels_list = [x.split("_")[-1] for x in self.file_list]
-        if ohe is not None:
-            self.ohe = ohe
-        else:
-            self.ohe = OneHotEncoder(sparse=False)
-            self.ohe.fit(np.array(self.country_labels_list).reshape(-1, 1))"""
-
     def __len__(self):
         return len(self.file_list)*self.patches_per_img
 
@@ -86,18 +78,26 @@ class PartitionedDataset(Dataset):
             print(f"loading new chunk... {requested_chunk}")
             self.buffer = []
 
-            for f_name in self.chunks[requested_chunk]:
+            for f_name in tqdm(self.chunks[requested_chunk]):
                 label = f_name.split("_")[-1]
                 m = self.ohe.transform(np.array([label]).reshape(-1, 1))
 
-                image_array = cv2.imread(join(self.folder_path, (f_name + ".png")))
-                image_array = image_array[self.offset[0]:, self.offset[1]:, :]
+                try:
+                    image_array = cv2.imread(join(self.folder_path, (f_name + ".png")))
+                    image_array = image_array[self.offset[0]:, self.offset[1]:, :]
+                except TypeError as e:
+                    flog("!:!:!:!:!:!:!:!:!:")
+                    flog(e)
+                    flog(type(image_array))
+                    flog(idx)
+                    flog(self.folder_path)
+                    flog(f_name)
                 patches = patchify(image_array, self.size, step=self.size[0])
                 patches = patches.reshape((-1, self.size[0], self.size[1], self.size[2]))
 
                 for k in range(self.patches_per_img):
                     patch = patches[k, :, :, :]
-                    self.buffer.append([patch, torch.Tensor(m)])
+                    self.buffer.append([torch.Tensor(patch), torch.Tensor(m)])
 
             if self.shuffle_buffer:
                 shuffle(self.buffer)
@@ -106,51 +106,6 @@ class PartitionedDataset(Dataset):
 
         return self.buffer[requested_img_idx_in_chunk * self.patches_per_img + patch_idx]
 
-
-
-
-
-# ========================================================================================
-
-""" OUTDATED
-class DS_1080p_Country(Dataset):
-    def __init__(self, folder_path, ohe=None):
-        self.folder_path = folder_path
-        self.file_list = [f.split(".png")[0] for f in listdir(folder_path)
-                          if isfile(join(folder_path, f)) and f.split(".png")[0].split("_")[-1] != 'None']
-
-        self.image_arrays = []self.size
-        for f_name in tqdm(self.file_list, total=len(self.file_list)):
-            image_array = cv2.imread(join(self.folder_path, (f_name + ".png")))
-            self.image_arrays.append(image_array)
-
-        self.country_labels_list = [x.split("_")[-1] for x in self.file_list]
-        # one-hot-encode country labels
-        if ohe is not None:
-            self.ohe = ohe
-        else:
-            self.ohe = OneHotEncoder(sparse=False)
-            self.ohe.fit(np.array(self.country_labels_list).reshape(-1, 1))
-
-    def __len__(self):
-        return len(self.file_list)*32
-
-    def nb_countries(self):
-        return len(self.ohe.categories_[0])
-
-    def __getitem__(self, idx):
-        img_idx = idx // 32
-        patch_idx = idx % 32
-
-        image_array = self.image_arrays[img_idx]
-        patches = patchify(image_array, (224, 224, 3), step=224)
-        patches = patches.reshape((-1, 224, 224, 3))
-
-        f_name = self.file_list[img_idx]
-        country_label_str = f_name.split("_")[-1]
-        m = self.ohe.transform(np.array([country_label_str]).reshape(-1, 1))
-
-        return [patches[patch_idx, :, :, :], torch.Tensor(m)]"""
 
 if __name__ == "__main__":
     from paths import ROOTDIR, DATADIR
