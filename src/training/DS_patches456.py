@@ -6,8 +6,8 @@ from os.path import isfile, join
 from sklearn.preprocessing import OneHotEncoder
 import numpy as np
 import pickle
-from paths import ROOTDIR, DATADIR
 import cv2
+from ..paths import ROOTDIR, COUNTRY_TAGS
 
 
 def chunks(lst, n):
@@ -17,12 +17,12 @@ def chunks(lst, n):
 
 
 class DS_Patches456_Partitioned:
-    def __init__(self, folder_path: str, nb_chunks: int, stochastic: bool = False) -> None:
+    def __init__(self, folder_path: str, nb_chunks: int, stochastic: bool = False, shuffle_file_list: bool = True) -> None:
         self.folder_path = folder_path
         self.nb_chunks = nb_chunks
         self.stochastic = stochastic
 
-        with open(f'{ROOTDIR}training/country_tags.pkl', 'rb') as f:
+        with open(COUNTRY_TAGS, 'rb') as f:
             country_tags = pickle.load(f)
         assert isinstance(country_tags, list)
         self.ohe = OneHotEncoder(sparse=False)
@@ -33,7 +33,12 @@ class DS_Patches456_Partitioned:
                           and f.split(".png")[0].split("_")[-1] in country_tags])
         
         # always shuffle file list globally at least once
-        # shuffle(self.file_list)
+        if shuffle_file_list:
+            shuffle(self.file_list)
+        
+        to_drop = len(self.file_list) % nb_chunks
+        if to_drop != 0:
+            self.file_list = self.file_list[:-to_drop]
 
         self.occurences = {key: 0 for key in country_tags}
         for f in self.file_list:
@@ -43,8 +48,12 @@ class DS_Patches456_Partitioned:
         print(self.occurences)
 
         self.nb_imgs_per_chunk = len(self.file_list) // self.nb_chunks
-        print(f"nombre d'imgs par chunk {self.nb_imgs_per_chunk}")
+        print(f"nbr of patches per chunk {self.nb_imgs_per_chunk}")
         self.chunks = list(chunks(self.file_list, self.nb_imgs_per_chunk))
+
+        for c in self.chunks:
+            print(len(c))
+
         self.current_chunk_loaded = -1
         self.buffer = None
 
@@ -68,7 +77,7 @@ class DS_Patches456_Partitioned:
         [img, lbl] = self.buffer[item_idx]
         if self.stochastic:
             # tag = self.ohe.inverse_transform(lbl.detach().cpu().numpy())
-            proba = 50/self.occurences[lbl]
+            proba = 400/self.occurences[lbl]
             # print(proba)
             if random() > proba:
                 # get new random item_idx
@@ -89,19 +98,20 @@ class DS_Patches456_Partitioned:
 
         assert self.current_chunk_loaded == chunk_idx
         
-        return self._get_item_in_buffer(item_idx)
+        [img, lbl] = self._get_item_in_buffer(item_idx)
+        return [torch.Tensor(img), torch.Tensor(self.ohe.transform(np.array([lbl]).reshape(-1, 1)))]
         
 
 
     def __len__(self):
-        return len(self.file_list)*self.patches_per_img
+        return len(self.file_list)
 
     def nb_countries(self):
         return len(self.ohe.categories_[0])
 
 
 if __name__ == "__main__" :
-    d = DS_Patches456_Partitioned("/work/imvia/an3112sc/perso/GeoG/datasets/v3_eval_patches", 2, stochastic=True)
+    d = DS_Patches456_Partitioned("/work/imvia/an3112sc/perso/GeoG/datasets/v3_eval_patches", 7, stochastic=True)
     
     
     for i in range(600, 620):

@@ -9,8 +9,9 @@ import numpy as np
 from torch.utils.data import Dataset
 import pickle
 from random import shuffle
-from paths import ROOTDIR, DATADIR
-from utils import flog
+
+from ..paths import ROOTDIR, DATADIR
+from ..logging.utils import flog
 
 
 def chunks(lst, n):
@@ -108,7 +109,7 @@ class PartitionedDataset(Dataset):
 
 
 if __name__ == "__main__":
-    from paths import ROOTDIR, DATADIR
+    from src.paths import ROOTDIR, DATADIR
     # train dataset
     train_ds = PartitionedDataset(
         f"{DATADIR}v3", 50, (456, 456, 3), offset=(65, 85), shuffle_buffer=True)

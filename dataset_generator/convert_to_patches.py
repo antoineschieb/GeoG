@@ -6,7 +6,7 @@ import cv2 as cv
 
 if __name__=="__main__":
     size = (456, 456, 3)
-    ds_path = P("/work/imvia/an3112sc/perso/GeoG/datasets/v3")
+    ds_path = P("/work/imvia/an3112sc/perso/GeoG/datasets/1080/train")
     p = ds_path.glob('**/*')
     files = [x for x in p if x.is_file()]
     for full_file_path in tqdm(files):
@@ -23,5 +23,5 @@ if __name__=="__main__":
         for i in range(8):
             patch = patches[i, :, :, :]
             new_name = prefix +'_'+ str(i) +'_'+ suffix
-            loc = ds_path.parent.joinpath("v3_patches").joinpath(new_name+".png")
+            loc = ds_path.parent.parent.joinpath("456/train").joinpath(new_name+".png")
             cv.imwrite(str(loc), patch)
