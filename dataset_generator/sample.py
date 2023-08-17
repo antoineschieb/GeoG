@@ -33,7 +33,7 @@ def connection_routine():
     caps = DesiredCapabilities.CHROME
     caps['goog:loggingPrefs'] = {'performance': 'ALL'}
 
-    driver = webdriver.Chrome(executable_path="dataset_generator/chromedriver/chromedriver.exe",
+    driver = webdriver.Chrome(executable_path="M:/projets_perso/GeoG/dataset_generator/chromedriver/chromedriver.exe",
                               options=options,
                               desired_capabilities=caps
                               )
