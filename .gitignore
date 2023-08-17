@@ -1,4 +1,4 @@
-/saved_models/
+training/saved_models/
 /cache-dir/
 *.png
 /.idea

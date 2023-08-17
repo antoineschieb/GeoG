@@ -13,29 +13,40 @@ from ..paths import ROOTDIR, COUNTRY_TAGS
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+        yield lst[i : i + n]
 
 
 class DS_Patches456_Partitioned:
-    def __init__(self, folder_path: str, nb_chunks: int, stochastic: bool = False, shuffle_file_list: bool = True) -> None:
+    def __init__(
+        self,
+        folder_path: str,
+        nb_chunks: int,
+        stochastic: bool = False,
+        shuffle_file_list: bool = True,
+    ) -> None:
         self.folder_path = folder_path
         self.nb_chunks = nb_chunks
         self.stochastic = stochastic
 
-        with open(COUNTRY_TAGS, 'rb') as f:
+        with open(COUNTRY_TAGS, "rb") as f:
             country_tags = pickle.load(f)
         assert isinstance(country_tags, list)
         self.ohe = OneHotEncoder(sparse=False)
         self.ohe.fit(np.array(country_tags).reshape(-1, 1))
 
-        self.file_list = sorted([f.split(".png")[0] for f in listdir(folder_path)
-                          if isfile(join(folder_path, f))
-                          and f.split(".png")[0].split("_")[-1] in country_tags])
-        
+        self.file_list = sorted(
+            [
+                f.split(".png")[0]
+                for f in listdir(folder_path)
+                if isfile(join(folder_path, f))
+                and f.split(".png")[0].split("_")[-1] in country_tags
+            ]
+        )
+
         # always shuffle file list globally at least once
         if shuffle_file_list:
             shuffle(self.file_list)
-        
+
         to_drop = len(self.file_list) % nb_chunks
         if to_drop != 0:
             self.file_list = self.file_list[:-to_drop]
@@ -57,7 +68,6 @@ class DS_Patches456_Partitioned:
         self.current_chunk_loaded = -1
         self.buffer = None
 
-
     def _load_new_chunk(self, i):
         """
         Loads images of chunk number i in the buffer
@@ -77,7 +87,7 @@ class DS_Patches456_Partitioned:
         [img, lbl] = self.buffer[item_idx]
         if self.stochastic:
             # tag = self.ohe.inverse_transform(lbl.detach().cpu().numpy())
-            proba = 400/self.occurences[lbl]
+            proba = 400 / self.occurences[lbl]
             # print(proba)
             if random() > proba:
                 # get new random item_idx
@@ -88,20 +98,20 @@ class DS_Patches456_Partitioned:
         else:
             return [img, lbl]
 
-
     def __getitem__(self, idx):
-        chunk_idx = idx // self.nb_imgs_per_chunk #     99 // 5 = 19
-        item_idx = idx % self.nb_imgs_per_chunk   #     99 % 5     = 4
+        chunk_idx = idx // self.nb_imgs_per_chunk  #     99 // 5 = 19
+        item_idx = idx % self.nb_imgs_per_chunk  #     99 % 5     = 4
 
         if chunk_idx != self.current_chunk_loaded:
             self._load_new_chunk(chunk_idx)
 
         assert self.current_chunk_loaded == chunk_idx
-        
-        [img, lbl] = self._get_item_in_buffer(item_idx)
-        return [torch.Tensor(img), torch.Tensor(self.ohe.transform(np.array([lbl]).reshape(-1, 1)))]
-        
 
+        [img, lbl] = self._get_item_in_buffer(item_idx)
+        return [
+            torch.Tensor(img),
+            torch.Tensor(self.ohe.transform(np.array([lbl]).reshape(-1, 1))),
+        ]
 
     def __len__(self):
         return len(self.file_list)
@@ -110,10 +120,11 @@ class DS_Patches456_Partitioned:
         return len(self.ohe.categories_[0])
 
 
-if __name__ == "__main__" :
-    d = DS_Patches456_Partitioned("/work/imvia/an3112sc/perso/GeoG/datasets/v3_eval_patches", 7, stochastic=True)
-    
-    
+if __name__ == "__main__":
+    d = DS_Patches456_Partitioned(
+        "/work/imvia/an3112sc/perso/GeoG/datasets/v3_eval_patches", 7, stochastic=True
+    )
+
     for i in range(600, 620):
         img, lbl = d[i]
         print(lbl)

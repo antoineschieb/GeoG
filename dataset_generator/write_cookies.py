@@ -11,7 +11,9 @@ import pickle
 # driver = webdriver.Firefox(executable_path="M:/projets_perso/TA/webdriver/geckodriver")
 options = Options()
 options.headless = False
-driver = webdriver.Firefox(options=options, service=Service(GeckoDriverManager().install()))
+driver = webdriver.Firefox(
+    options=options, service=Service(GeckoDriverManager().install())
+)
 
 
 # vraie game
@@ -27,4 +29,4 @@ while True:
     try:
         pickle.dump(driver.get_cookies(), open("cookies.pkl", "wb"))
     except Exception as e:
-        raise e ("xd")
+        raise e("xd")

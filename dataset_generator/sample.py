@@ -28,15 +28,16 @@ def connection_routine():
     options = Options()
     options.headless = True
     options.add_argument("--start-maximized")
-    options.add_argument('log-level=1')
+    options.add_argument("log-level=1")
 
     caps = DesiredCapabilities.CHROME
-    caps['goog:loggingPrefs'] = {'performance': 'ALL'}
+    caps["goog:loggingPrefs"] = {"performance": "ALL"}
 
-    driver = webdriver.Chrome(executable_path="M:/projets_perso/GeoG/dataset_generator/chromedriver/chromedriver.exe",
-                              options=options,
-                              desired_capabilities=caps
-                              )
+    driver = webdriver.Chrome(
+        executable_path="M:/projets_perso/GeoG/dataset_generator/chromedriver/chromedriver.exe",
+        options=options,
+        desired_capabilities=caps,
+    )
     URL = "https://geoguessr.com/maps/59a1514f17631e74145b6f47"
     driver.get(URL)
     time.sleep(5)
@@ -47,6 +48,7 @@ def connection_routine():
     # need to open it twice to be logged in
     driver.get(URL)
     return driver
+
 
 def click_button(driver, xpath):
     seconds = 0
@@ -66,23 +68,29 @@ def click_button(driver, xpath):
     raise TimeoutError(f"Timeout for button {xpath}")
 
 
-
-
-
-
 def game_start_routine(driver, change_settings=False):
     # click_button(driver, "/html/body/div/div/div[2]/div[1]/main/div/div/div[1]/div[3]/div/div/button")
     driver.get("https://www.geoguessr.com/maps/59a1514f17631e74145b6f47/play")
     if change_settings:
-        click_button(driver, "/html/body/div/div/div[2]/div[1]/main/div/div[2]/div/div/div[5]/div/div/div[2]/input")
-        click_button(driver, "/html/body/div/div/div[2]/div[1]/main/div/div[2]/div/div/div[5]/div/div[2]/div/div[2]/label[1]/div[3]/input")
-    click_button(driver, "/html/body/div/div/div[2]/div[1]/main/div/div[2]/div/div/div[3]/div/div/button")
+        click_button(
+            driver,
+            "/html/body/div/div/div[2]/div[1]/main/div/div[2]/div/div/div[5]/div/div/div[2]/input",
+        )
+        click_button(
+            driver,
+            "/html/body/div/div/div[2]/div[1]/main/div/div[2]/div/div/div[5]/div/div[2]/div/div[2]/label[1]/div[3]/input",
+        )
+    click_button(
+        driver,
+        "/html/body/div/div/div[2]/div[1]/main/div/div[2]/div/div/div[3]/div/div/button",
+    )
     return driver
 
 
 def hide_class_name(driver, cname):
     driver.execute_script(
-        f'document.getElementsByClassName("{cname}")[0].style.visibility = "hidden";')
+        f'document.getElementsByClassName("{cname}")[0].style.visibility = "hidden";'
+    )
     return
 
 
@@ -92,8 +100,10 @@ def take_nice_screenshot(driver, name):
     # html body div#__next div.version3-in-game_root__P2ydF.version3-in-game_backgroundDefault__oNQrE div.version3-in-game_content__9t8Xc main.version3-in-game_layout__Hi_Iw div.game-layout div.game-layout__canvas div.game-layout__panorama div.game-layout__panorama-canvas div div div.gm-style div div div div.mapsConsumerUiSceneInternalCoreScene__root.widget-scene canvas.mapsConsumerUiSceneInternalCoreScene__canvas.widget-scene-canvas
     # ")
 
-
-    element = driver.find_element(By.XPATH, "/html/body/div/div/div/main/div/div/div[1]/div/div/div/div/div[1]/div/div[10]/div/canvas")
+    element = driver.find_element(
+        By.XPATH,
+        "/html/body/div/div/div/main/div/div/div[1]/div/div/div/div/div[1]/div/div[10]/div/canvas",
+    )
     # hide elements
     """
     to_hide = ["status_inner__1eytg",
@@ -109,7 +119,7 @@ def take_nice_screenshot(driver, name):
 
     time.sleep(20)"""
     screenshot = element.screenshot_as_png
-    with open(f"D:/projets_perso/GeoG/datasets/v4/{name}.png", 'wb') as f:
+    with open(f"D:/projets_perso/GeoG/datasets/v4/{name}.png", "wb") as f:
         f.write(screenshot)
     return
 
@@ -120,7 +130,10 @@ def network_logs(driver):
     for request in driver.requests:
         if request.response and request.response.body:
             # important to decode
-            body = decode(request.response.body, (request.response.headers.get('Content-Encoding', 'identity')))
+            body = decode(
+                request.response.body,
+                (request.response.headers.get("Content-Encoding", "identity")),
+            )
 
             try:
                 data = json.loads(body)
@@ -133,7 +146,6 @@ def network_logs(driver):
     return list_of_Ls
 
 
-
 def task():
     driver = connection_routine()
     driver = game_start_routine(driver, change_settings=True)
@@ -141,7 +153,7 @@ def task():
 
     for game in range(10):
         driver.set_window_size(1920, 1080)
-        #driver.maximize_window()
+        # driver.maximize_window()
         time.sleep(10)
         for r in range(1, 6):
             time.sleep(7)
@@ -149,48 +161,56 @@ def task():
                 list_of_Ls = network_logs(driver)
                 unique_locs = process(list_of_Ls)
                 if len(unique_locs) != 0:
-                    if len(unique_locs) == 5*game + r:
+                    if len(unique_locs) == 5 * game + r:
                         break
             time.sleep(2)
             ssname = f"{unique_locs[-1][0]}_{unique_locs[-1][1]}_{unique_locs[-1][2]}"
             take_nice_screenshot(driver, ssname)
             print(f"{os.getpid()}:{ssname}")
             # click map
-            click_button(driver, "/html/body/div/div/div/main/div/div/div[4]/div/div[3]/div/div/div/div/div[2]/div[2]")
+            click_button(
+                driver,
+                "/html/body/div/div/div/main/div/div/div[4]/div/div[3]/div/div/div/div/div[2]/div[2]",
+            )
             # guess button
-            click_button(driver, "/html/body/div/div/div/main/div/div/div[4]/div/div[4]/button/div")
+            click_button(
+                driver,
+                "/html/body/div/div/div/main/div/div/div[4]/div/div[4]/button/div",
+            )
             if r < 5:
                 # next round
-                click_button(driver, "/html/body/div/div/div/main/div[2]/div/div[2]/div/div[1]/div/div[4]/button/div")
-        time.sleep(30) # avoid "slow down there cowboy"
+                click_button(
+                    driver,
+                    "/html/body/div/div/div/main/div[2]/div/div[2]/div/div[1]/div/div[4]/button/div",
+                )
+        time.sleep(30)  # avoid "slow down there cowboy"
         game_start_routine(driver, change_settings=False)
 
     return "10 games done"
 
 
-if __name__=='__main__':
+if __name__ == "__main__":
     options = Options()
     options.headless = False
     options.add_argument("--start-maximized")
-    options.add_argument('log-level=1')
+    options.add_argument("log-level=1")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option('excludeSwitches', ['enable-logging'])
-    options.add_experimental_option('useAutomationExtension', False)
-    options.add_argument('--disable-blink-features=AutomationControlled')
+    options.add_experimental_option("excludeSwitches", ["enable-logging"])
+    options.add_experimental_option("useAutomationExtension", False)
+    options.add_argument("--disable-blink-features=AutomationControlled")
     print(1)
     caps = DesiredCapabilities.CHROME
-    caps['goog:loggingPrefs'] = {'performance': 'ALL'}
-    #s = Service(r"M:\projets_perso\GeoG\dataset_generator\chromedriver\chromedriver.exe")
+    caps["goog:loggingPrefs"] = {"performance": "ALL"}
+    # s = Service(r"M:\projets_perso\GeoG\dataset_generator\chromedriver\chromedriver.exe")
 
-
-    driver = webdriver.Chrome(executable_path="M:/projets_perso/GeoG/dataset_generator/chromedriver/chromedriver.exe",
-                              options=options,
-                              desired_capabilities=caps,
-                              #service=s
-                              )
+    driver = webdriver.Chrome(
+        executable_path="M:/projets_perso/GeoG/dataset_generator/chromedriver/chromedriver.exe",
+        options=options,
+        desired_capabilities=caps,
+        # service=s
+    )
     print(3)
     URL = "https://geoguessr.com/maps/59a1514f17631e74145b6f47"
     print(4)
     driver.get(URL)
     print(5)
-

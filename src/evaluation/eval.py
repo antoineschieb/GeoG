@@ -6,6 +6,7 @@ from DS_1080p_Country import PartitionedDataset
 from torchvision.models import ResNet18_Weights
 from paths import ROOTDIR, DATADIR
 
+
 def countries_from_output(ohe, out):
     m = torch.nn.Softmax(dim=1)
     real_out = m(out)
@@ -26,16 +27,18 @@ def evaluate(N, ohe, small_ds):
     confidence = float(torch.max(torch.nn.Softmax(dim=1)(pred)))
     country_label = countries_from_output(ohe, country_label)
     predicted_label = countries_from_output(ohe, pred)
-    cv2.imwrite(f"{ROOTDIR}training/full_img_eval/p{N}_{country_label[0]}_{predicted_label[0]}_{round(confidence, 2)}.png", orig_patch)
+    cv2.imwrite(
+        f"{ROOTDIR}training/full_img_eval/p{N}_{country_label[0]}_{predicted_label[0]}_{round(confidence, 2)}.png",
+        orig_patch,
+    )
     return pred
 
 
 if __name__ == "__main__":
-
     # cuda
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.set_printoptions(sci_mode=False, precision=2, linewidth=200)
-    torch.set_default_tensor_type('torch.cuda.FloatTensor')
+    torch.set_default_tensor_type("torch.cuda.FloatTensor")
     print(f"device: {device}")
 
     # base dataset
@@ -48,20 +51,23 @@ if __name__ == "__main__":
         torch.nn.Dropout(p=0.1, inplace=True),
         torch.nn.Linear(2048, ds.nb_countries()),
     )
-    model.load_state_dict(torch.load(f"{ROOTDIR}training/saved_models/efnetb5/model_epoch_1_loss2.1834549507420107.pth"))
+    model.load_state_dict(
+        torch.load(
+            f"{ROOTDIR}training/saved_models/efnetb5/model_epoch_1_loss2.1834549507420107.pth"
+        )
+    )
     model.to(device)
     model.eval()
 
     with torch.no_grad():
         for imgidx in range(41, 70):
-            M = ds.patches_per_img*imgidx
+            M = ds.patches_per_img * imgidx
             preds = []
-            print(f'img index: {imgidx}')
+            print(f"img index: {imgidx}")
             for i in range(ds.patches_per_img):
-                pred = evaluate(M+i, ds.ohe, small_ds)
+                pred = evaluate(M + i, ds.ohe, small_ds)
                 preds.append(pred.cpu().detach().numpy())
             preds = np.array(preds)
             print("prediction:")
             mean_pred = np.mean(preds, axis=0)
             print(countries_from_output(ds.ohe, torch.Tensor(mean_pred)))
-
